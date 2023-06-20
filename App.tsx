@@ -1,26 +1,29 @@
-import axios from 'axios';
 import {FlatList, Image, StyleSheet, Text, View} from 'react-native';
 import React, {useEffect, useState} from 'react';
 import RNFetchBlob from 'rn-fetch-blob';
-import base64 from 'react-native-base64';
 
 export default function App() {
-  const [data, setData] = useState([]);
+  const [data, setData] = useState<string | ArrayBuffer>();
 
   const fetchData = async () => {
-    console.log('hi');
-    const responseArray = await Promise.all(
-      data.map(async item => {
-        if (item.type === 'arrayBuffer') {
-          console.log('arrayBuffer');
-          const response = await RNFetchBlob.fetch('GET', item.url);
-          const base64Image = base64.encode(response.data);
-          return {...item, data: base64Image};
-        }
-        return item;
-      }),
-    );
-    setData(responseArray);
+    try {
+      const response = await RNFetchBlob.fetch(
+        'GET',
+        'https://ayae52i9de.execute-api.us-east-1.amazonaws.com/prod/s3?key=elephant-trax/google_103236758783646644108/04252023032040_00148466-6020-496d-879a-01edabd564d1',
+      );
+      // console.log(response.data);
+      const arrayBuffer = new Blob([response.data]);
+      console.log(arrayBuffer);
+      const reader = new FileReader();
+      reader.readAsDataURL(arrayBuffer);
+      reader.onloadend = () => {
+        const base64data = reader.result;
+        console.log(base64data);
+        setData(base64data);
+      };
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   useEffect(() => {
@@ -38,18 +41,13 @@ export default function App() {
     },
   ];
 
-  const renderItem = ({item}) => {
+  const renderItem = ({item}: {item: {url: string; type: string}}) => {
     if (item.type === 'arrayBuffer') {
       return (
-        <Image
-          source={{uri: `data:image/jpeg;base64,${item.data}`}}
-          style={{width: 100, height: 100}}
-        />
+        <Image source={{uri: data ? data : dat[1].url}} style={styles.image} />
       );
     } else {
-      return (
-        <Image source={{uri: item.url}} style={{width: 300, height: 100}} />
-      );
+      return <Image source={{uri: item.url}} style={styles.image} />;
     }
   };
 
@@ -83,4 +81,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   heading: {fontSize: 34, fontWeight: 'bold'},
+  image: {width: 300, height: 100},
 });
